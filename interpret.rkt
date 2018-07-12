@@ -3,34 +3,29 @@
 (require "parse.rkt")
 
 (define (lc-eval expression)
-  (let ([type (car expression)]
-         [value (cdr expression)])
-    (match type
-      ['name
-       value]
-      ['function
-       ;normal order
-       (let ([function-name (car value)]
-             [function-body (cdr value)])
-         `(function
-           ,function-name
-           ,(car
-             (map
-              (λ (p)
-                (cond
-                  [(equal? function-name (cdr p))
-                   `(bound . ,(cdr p))]
-                  [else p]))
-              function-body))))]
-      ['application
-       (let ([operator (car value)]
-             [operand (cdr value)])
-         ;TODO: replace operator bound values by operand
-         value)]
-      [else (error "AST node could not be evaluated: " value)])))
+  (if (pair? expression)
+      (cond
+        [(eq? (car expression) 'λ) expression]
+        [(eq? (car expression) 'lc-apply)
+         (lc-apply (cadr expression) (caddr expression))]
+        [else expression])
+      expression))
+
+(define (lc-apply operator operand)
+  ;normal order
+  (let ([bound (cadr operator)]
+        [body (caddr operator)])
+    (caar
+     (map (λ (e) (if (equal? e (car bound))
+                     operand
+                     e))
+          body))))
 
 (define (eval-exec s)
-  (lc-eval (parse-exec s)))
+  (let ([parsed (parse-exec s)])
+  (lc-eval parsed)))
 
 (eval-exec "x")
 (eval-exec "λx.x")
+(eval-exec "(λx.x y)")
+(eval-exec "λx.(x x)")

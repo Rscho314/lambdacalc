@@ -18,9 +18,13 @@
    (expression [(name) $1]
                [(function) $1]
                [(application) $1])
-   (name [(NAME) `(name . ,(string->symbol $1))])
-   (function [(LAMBDA NAME D expression) `(function ,(string->symbol $2) ,$4)])
-   (application [(OP expression expression CP) `(application ,$2 ,$3)]))))
+   (name [(NAME) (string->symbol $1)])
+   (function [(LAMBDA NAME D body) `(λ (,(string->symbol $2)) (,$4))])
+   (body [(expression) $1])
+   (application [(OP operator operand CP)
+                 `(lc-apply ,$2 ,$3)])
+   (operator [(expression) $1])
+   (operand [(expression) (list $1)]))))
 
 (define (parse parser lexer s)
 (let ([input-port (open-input-string s)])
@@ -37,3 +41,4 @@
 #;(parse-exec "(x x)")
 #;(parse-exec "λf.λa.(f a)")
 #;(parse-exec "(λx.x y)")
+#;(parse-exec "λx.(x x)")
